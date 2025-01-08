@@ -210,7 +210,26 @@ class MailService extends AbstractMailService
             $mail->setHeaders($headers);
         }
 
-        $this->mailSender->send($mail);
+        try {
+            $this->mailSender->send($mail);
+        } catch (\Exception $e) {
+            $event = new MailErrorEvent(
+                $context,
+                Level::Error,
+                $e,
+                'Exception when sending mail. Check log. Message: ' . $e->getMessage(),
+                null,
+                $templateData
+            );
+            $this->eventDispatcher->dispatch($event);
+
+            $this->logger->error(
+                'Exception during mail sending.',
+                [$e]
+            );
+
+            return null;
+        }
 
         $event = new MailSentEvent($data['subject'], $recipients, $contents, $context, $templateData['eventName'] ?? null);
         $this->eventDispatcher->dispatch($event);
