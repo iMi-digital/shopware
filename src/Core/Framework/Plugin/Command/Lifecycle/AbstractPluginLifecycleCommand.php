@@ -42,8 +42,8 @@ abstract class AbstractPluginLifecycleCommand extends Command
             ->setDescription(\sprintf('%ss given plugins', ucfirst($lifecycleMethod)))
             ->addArgument(
                 'plugins',
-                InputArgument::REQUIRED | InputArgument::IS_ARRAY,
-                'List of plugins'
+                InputArgument::IS_ARRAY,
+                'List of plugins. Leave empty for all available plugins.'
             )
             ->addOption(
                 'refresh',
@@ -166,7 +166,8 @@ abstract class AbstractPluginLifecycleCommand extends Command
         /** @var PluginCollection $pluginCollection */
         $pluginCollection = $this->pluginRepo->search($criteria, $context)->getEntities();
 
-        if ($pluginCollection->count() <= 1) {
+        // if no arguments were given and only one plugin is present, still ask
+        if ($pluginCollection->count() === 0 || (count($arguments) > 0 && $pluginCollection->count() === 1)) {
             return $pluginCollection;
         }
 
@@ -176,7 +177,7 @@ abstract class AbstractPluginLifecycleCommand extends Command
         $choice = $io->askQuestion(
             new ChoiceQuestion(
                 \sprintf(
-                    '%d plugins were found. How do you want to continue?',
+                    '%d plugin(s) found. How do you want to continue?',
                     $pluginCollection->count()
                 ),
                 [
